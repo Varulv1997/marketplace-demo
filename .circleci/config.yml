@@ -1,47 +1,13 @@
-version: 2
-jobs:
-  build:
-    docker:
-      - image: circleci/node:12.14.1-buster-browsers
-    steps:
-      - checkout
-      - restore_cache:
-          name: Restore Yarn Package Cache
-          keys: # Partial restoration if available: https://circleci.com/docs/2.0/caching/#yarn-node
-            - yarn-packages-v1-{{ checksum "yarn.lock" }}
-            - yarn-packages-v1-
-      - run:
-          name: Install Dependencies, purely from the lockfile
-          command: yarn install --frozen-lockfile
-      - save_cache:
-          name: Save Yarn Package Cache
-          key: yarn-packages-v1-{{ checksum "yarn.lock" }}
-          paths:
-            - node_modules/
-      - save_cache: # special step to save the dependency cache
-          key: dependency-cache-{{ checksum "package.json" }}
-          paths:
-          - ./node_modules
-      - run:
-          name: Check Coding Style (standard)
-          command: yarn lint
-      - run:
-          name: Build Netlify functions
-          command: yarn functions:build
-      - run:
-          name: Start a development server for CI
-          command: yarn dev:ci
-          background: true
-      - run: # loop, sleep 0.1 second and check ip 8080 every loop
-          name: Waiting for server to be responsive (for e2e)
-          command: |
-              while ! nc -z localhost 8080; do
-                sleep 0.1
-              done
-      - run:
-          name: Running end to end tests
-          command: yarn test:ci:e2e
-      - store_artifacts:
-          path: /tmp/test-results
-      - store_test_results:
-          path: /tmp/test-results
+# Use the latest 2.1 version of CircleCI pipeline process engine. See: https://circleci.com/docs/2.0/configuration-reference
+version: 2.1
+# Use a package of configuration called an orb.
+orbs:
+  # Declare a dependency on the welcome-orb
+  welcome: circleci/welcome-orb@0.4.1
+# Orchestrate or schedule a set of jobs
+workflows:
+  # Name the workflow "welcome"
+  welcome:
+    # Run the welcome/run job in its own container
+    jobs:
+      - welcome/run
